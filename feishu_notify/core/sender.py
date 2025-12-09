@@ -15,8 +15,8 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from core.builder import FeishuCardBuilder
-from core.types import NotifyMessage
+from .builder import FeishuCardBuilder
+from .types import NotifyMessage
 
 
 logger = logging.getLogger(__name__)

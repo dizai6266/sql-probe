@@ -124,6 +124,12 @@ class NotifyMessage:
         if self.timestamp is None:
             self.timestamp = datetime.now()
         
+        # 确保列表字段不为 None
+        if self.links is None:
+            self.links = []
+        if self.mentions is None:
+            self.mentions = []
+        
         # 将 dict 格式的 links 转换为 LinkButton
         if self.links and isinstance(self.links[0], dict):
             self.links = [

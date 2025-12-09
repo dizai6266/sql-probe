@@ -15,13 +15,13 @@ Usage:
     await notifier.send(msg)
 """
 
-from core.types import NotifyLevel, NotifyMessage, LinkButton
-from core.builder import FeishuCardBuilder
-from core.sender import FeishuSender
-from core.dedup import DedupManager, RateLimiter
-from templates.loader import TemplateLoader
-from config import NotifyConfig
-from notifier import Notifier
+from .core.types import NotifyLevel, NotifyMessage, LinkButton
+from .core.builder import FeishuCardBuilder
+from .core.sender import FeishuSender
+from .core.dedup import DedupManager, RateLimiter
+from .templates.loader import TemplateLoader
+from .config import NotifyConfig
+from .notifier import Notifier
 
 __version__ = "1.0.0"
 __all__ = [
