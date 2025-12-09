@@ -10,10 +10,11 @@
 import sys
 import os
 
-# 配置飞书 Webhook（测试用，生产环境建议使用 Databricks Secrets）
-os.environ["FEISHU_WEBHOOK"] = "https://open.feishu.cn/open-apis/bot/v2/hook/6d8b23ff-fe40-473f-a9c7-1db6398eda61"
+# ⚠️ 配置飞书 Webhook（生产环境建议使用 Databricks Secrets）
+os.environ["FEISHU_WEBHOOK"] = "https://open.feishu.cn/open-apis/bot/v2/hook/your-webhook-id"
 
-sys.path.insert(0, "/Workspace/Users/dizai@joycastle.mobi/sql-probe")
+# ⚠️ 请替换为你的实际部署路径
+sys.path.insert(0, "/Workspace/Shared/libs/sql-probe")
 from feishu_notify import Notifier as FeishuNotifier  # 先导入确保路径正确
 from sql_probe import SQLProbeNotifier, ProbeInterruptError
 

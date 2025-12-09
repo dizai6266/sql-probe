@@ -2,7 +2,7 @@
 # MAGIC %md
 # MAGIC # SQL-Probe 功能演示 Notebook
 # MAGIC 
-# MAGIC 本 Notebook 演示如何调用部署在 `/Workspace/Users/dizai@joycastle.mobi/sql-probe` 的所有功能。
+# MAGIC 本 Notebook 演示 SQL-Probe 的所有功能。
 # MAGIC 
 # MAGIC ## 功能列表
 # MAGIC 1. 基础配置与初始化
@@ -30,7 +30,9 @@ import os
 # ============================================================
 # 📌 配置飞书 Webhook（测试用，生产环境建议使用 Databricks Secrets）
 # ============================================================
-FEISHU_WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/6d8b23ff-fe40-473f-a9c7-1db6398eda61"
+# ⚠️ 请替换为你自己的飞书 Webhook URL
+# 获取方式: 飞书群设置 → 群机器人 → 添加机器人 → 自定义机器人 → 复制 Webhook 地址
+FEISHU_WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/your-webhook-id"
 
 # 设置默认渠道的 Webhook
 # 命名规则: channel="xxx" → 环境变量 FEISHU_WEBHOOK_XXX（default 渠道特殊，为 FEISHU_WEBHOOK）
@@ -41,7 +43,8 @@ print(f"✅ 飞书 Webhook 已配置")
 # ============================================================
 # 📌 添加 sql-probe 到 Python 路径
 # ============================================================
-SQL_PROBE_PATH = "/Workspace/Users/dizai@joycastle.mobi/sql-probe"
+# ⚠️ 请替换为你的实际部署路径
+SQL_PROBE_PATH = "/Workspace/Shared/libs/sql-probe"
 if SQL_PROBE_PATH not in sys.path:
     sys.path.insert(0, SQL_PROBE_PATH)
 
