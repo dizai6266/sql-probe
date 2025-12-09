@@ -141,7 +141,9 @@ class SQLExecutor:
         """
         try:
             # 使用 LIMIT 0 只获取 schema
-            wrapped_sql = f"SELECT * FROM ({sql.strip().rstrip(';')}) t LIMIT 0"
+            # 注意：末尾加换行符，避免行注释（--）把括号也注释掉
+            cleaned_sql = sql.strip().rstrip(';')
+            wrapped_sql = f"SELECT * FROM ({cleaned_sql}\n) t LIMIT 0"
             df = self.spark.sql(wrapped_sql)
             columns = list(df.columns)
             
