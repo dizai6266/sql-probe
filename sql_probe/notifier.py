@@ -296,8 +296,9 @@ class SQLProbeNotifier:
             logger.debug(f"[SQL-Probe] 执行 SQL:\n{sql_text[:300]}...")
         
         try:
-            # 1. 执行 SQL
-            rows, execution_time = self.executor.execute(sql_text)
+            # 1. 执行 SQL（如果使用 condition，跳过标准列验证）
+            skip_validation = condition is not None
+            rows, execution_time = self.executor.execute(sql_text, skip_validation=skip_validation)
             
             if self.debug:
                 logger.debug(f"[SQL-Probe] 返回 {len(rows)} 行，耗时 {execution_time:.2f}s")

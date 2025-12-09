@@ -50,12 +50,13 @@ class SQLExecutor:
         self.spark = spark
         self.timeout = timeout
     
-    def execute(self, sql: str) -> Tuple[List[Dict[str, Any]], float]:
+    def execute(self, sql: str, skip_validation: bool = False) -> Tuple[List[Dict[str, Any]], float]:
         """
         执行 SQL 并返回结果
         
         Args:
             sql: 要执行的 SQL 文本
+            skip_validation: 是否跳过必需列验证（用于聚合条件检查等场景）
             
         Returns:
             (rows, execution_time) 元组
@@ -64,7 +65,7 @@ class SQLExecutor:
             
         Raises:
             SQLExecutionError: SQL 执行失败
-            SQLValidationError: 结果格式不符合规范
+            SQLValidationError: 结果格式不符合规范（skip_validation=False 时）
         """
         start_time = time.time()
         
@@ -73,8 +74,9 @@ class SQLExecutor:
             logger.debug(f"执行 SQL: {sql[:200]}...")
             df = self.spark.sql(sql)
             
-            # 验证列
-            self._validate_columns(df, sql)
+            # 验证列（除非跳过验证）
+            if not skip_validation:
+                self._validate_columns(df, sql)
             
             # 收集结果（期望结果行数较少）
             rows = [row.asDict() for row in df.collect()]
