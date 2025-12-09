@@ -39,7 +39,6 @@ from .models.exceptions import (
 from .notifier import SQLProbeNotifier
 from .core.template import TemplateEngine
 from .core.aggregation import AggregationCondition, MultiCondition
-from .core.history import AlertHistory
 
 __version__ = "0.1.0"
 
@@ -62,6 +61,5 @@ __all__ = [
     "TemplateEngine",
     "AggregationCondition",
     "MultiCondition",
-    "AlertHistory",
 ]
 

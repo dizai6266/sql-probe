@@ -31,7 +31,6 @@ from .core.resolver import LevelResolver
 from .core.aggregator import ResultAggregator
 from .core.template import TemplateEngine
 from .core.aggregation import AggregationCondition, MultiCondition
-from .core.history import AlertHistory
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +114,6 @@ class SQLProbeNotifier:
         self.resolver = LevelResolver()
         self.aggregator = ResultAggregator()
         self.template_engine = TemplateEngine()
-        self.history = AlertHistory(max_records=1000)
         
         # 告警状态历史（用于 notify_on_ok 功能）
         # key: alert_name, value: 上一次是否触发告警
@@ -253,9 +251,6 @@ class SQLProbeNotifier:
         empty_result_as: str = "ok",
         template: Optional[str] = None,
         condition: Optional[Union[AggregationCondition, MultiCondition]] = None,
-        track_value: Optional[str] = None,
-        detect_change: bool = False,
-        change_threshold: float = 50.0,
     ) -> ProbeResult:
         """
         执行 SQL 探针检查
@@ -277,9 +272,6 @@ class SQLProbeNotifier:
                             - "error": 视为错误
             template: 自定义通知模板，支持变量如 {alert_name}, {level}, {content} 等
             condition: 聚合条件，如 AggregationCondition.sum("amount") > 10000
-            track_value: 追踪的数值列名（用于变化率检测）
-            detect_change: 是否检测指标变化率
-            change_threshold: 变化率告警阈值 (%)
             
         Returns:
             ProbeResult 执行结果
@@ -338,25 +330,7 @@ class SQLProbeNotifier:
                         default_alert_name=alert_name
                     )
             
-            # 6. 记录到历史
-            tracked_value = self._extract_tracked_value(rows, track_value) if rows else None
-            self.history.record(result, value=tracked_value)
-            
-            # 7. 变化率检测
-            if detect_change and result.alert_name:
-                change_result = self._check_change_rate(
-                    result=result,
-                    threshold=change_threshold
-                )
-                if change_result and change_result.get("is_anomaly"):
-                    # 将变化率信息附加到内容
-                    result.content += f"\n\n📈 变化率异常: {change_result['message']}"
-                    # 升级告警级别，触发通知
-                    if result.level < AlertLevel.WARNING:
-                        result.level = AlertLevel.WARNING
-                    result.triggered = True
-            
-            # 8. 发送通知（包括恢复通知）
+            # 6. 发送通知（包括恢复通知）
             if not silent:
                 self._send_notification_with_recovery(
                     result=result,
@@ -367,10 +341,10 @@ class SQLProbeNotifier:
                     template=template
                 )
             
-            # 9. 更新告警状态
+            # 7. 更新告警状态
             self._alert_status[result.alert_name] = result.triggered
             
-            # 10. 检查是否需要中断
+            # 8. 检查是否需要中断
             self._check_interrupt(result, interrupt_on_error)
             
             return result
@@ -726,68 +700,6 @@ class SQLProbeNotifier:
             executed_at=datetime.now(),
             sql_text=sql_text,
             success=True
-        )
-    
-    def _extract_tracked_value(
-        self,
-        rows: List[Dict[str, Any]],
-        track_column: Optional[str]
-    ) -> Optional[float]:
-        """
-        提取追踪的数值
-        
-        Args:
-            rows: SQL 返回的行
-            track_column: 要追踪的列名
-            
-        Returns:
-            数值或 None
-        """
-        if not rows:
-            return None
-        
-        row = rows[0]
-        row_lower = {k.lower(): v for k, v in row.items()}
-        
-        # 如果指定了列名
-        if track_column:
-            val = row_lower.get(track_column.lower())
-            if val is not None:
-                try:
-                    return float(val)
-                except (ValueError, TypeError):
-                    pass
-            return None
-        
-        # 否则尝试找第一个数值列
-        for key, val in row_lower.items():
-            if key not in ('alert_name', 'is_warning', 'alert_info', 'status'):
-                try:
-                    return float(val)
-                except (ValueError, TypeError):
-                    pass
-        
-        return None
-    
-    def _check_change_rate(
-        self,
-        result: ProbeResult,
-        threshold: float
-    ) -> Optional[Dict[str, Any]]:
-        """
-        检查变化率
-        
-        Args:
-            result: 探针结果
-            threshold: 变化率阈值 (%)
-            
-        Returns:
-            变化率检测结果
-        """
-        return self.history.detect_anomaly(
-            alert_name=result.alert_name,
-            threshold_rate=threshold,
-            min_records=2
         )
     
     def _check_interrupt(self, result: ProbeResult, interrupt_on_error: bool) -> None:

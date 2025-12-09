@@ -1,7 +1,7 @@
 """
 SQL-Probe 核心组件
 
-包含 SQL 执行器、级别解析器、结果聚合器、模板引擎、聚合条件和历史记录
+包含 SQL 执行器、级别解析器、结果聚合器、模板引擎、聚合条件
 """
 
 from .executor import SQLExecutor
@@ -14,7 +14,6 @@ from .aggregation import (
     AggregationCondition,
     MultiCondition,
 )
-from .history import AlertHistory, AlertRecord
 
 __all__ = [
     "SQLExecutor",
@@ -25,7 +24,5 @@ __all__ = [
     "Operator",
     "AggregationCondition",
     "MultiCondition",
-    "AlertHistory",
-    "AlertRecord",
 ]
 

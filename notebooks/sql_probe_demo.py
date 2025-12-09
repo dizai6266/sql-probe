@@ -12,7 +12,7 @@
 # MAGIC 5. 恢复通知功能
 # MAGIC 6. 空结果处理
 # MAGIC 7. 中断控制（阻断 ETL）
-# MAGIC 8. 高级功能（聚合条件、变化率检测）
+# MAGIC 8. 高级功能（聚合条件）
 # MAGIC 9. SQL 验证（Dry Run）
 
 # COMMAND ----------
@@ -503,62 +503,6 @@ result = probe.execute(
 print(f"📊 组合条件检查结果:")
 print(f"   是否触发: {result.triggered}")
 print(f"   内容: {result.content}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 8.3 变化率检测
-
-# COMMAND ----------
-
-# 启用变化率检测，监控指标的异常波动
-# 注意：需要多次执行才能检测变化
-
-# 第一次执行，建立基线
-result1 = probe.execute("""
-    SELECT
-        '日活检测' as alert_name,
-        0 as is_warning,
-        '当前日活: 1000' as alert_info,
-        'Normal' as status,
-        1000 as dau  -- 追踪的数值
-""", 
-    detect_change=True,
-    change_threshold=50.0,  # 变化超过 50% 告警
-    track_value="dau"
-)
-print(f"第一次: DAU=1000")
-
-# 第二次执行，模拟正常波动
-result2 = probe.execute("""
-    SELECT
-        '日活检测' as alert_name,
-        0 as is_warning,
-        '当前日活: 1100' as alert_info,
-        'Normal' as status,
-        1100 as dau  -- 波动 10%
-""", 
-    detect_change=True,
-    change_threshold=50.0,
-    track_value="dau"
-)
-print(f"第二次: DAU=1100, 变化 10% (正常)")
-
-# 第三次执行，模拟异常波动
-result3 = probe.execute("""
-    SELECT
-        '日活检测' as alert_name,
-        0 as is_warning,
-        '当前日活: 500' as alert_info,
-        'Normal' as status,
-        500 as dau  -- 突然下降
-""", 
-    detect_change=True,
-    change_threshold=50.0,
-    track_value="dau"
-)
-print(f"第三次: DAU=500, 变化 >50% (可能触发变化率告警)")
-print(f"   内容: {result3.content}")
 
 # COMMAND ----------
 
