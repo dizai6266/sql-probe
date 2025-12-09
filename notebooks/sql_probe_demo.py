@@ -113,15 +113,15 @@ spark.sql("SELECT * FROM test_orders").show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 2.2 基础检查（Debug 模式，不发送真实通知）
+# MAGIC ### 2.2 基础检查
 
 # COMMAND ----------
 
-# 初始化探针（Debug 模式，不会发送真实通知）
+# 初始化探针
 probe = SQLProbeNotifier(
     spark,
     source="Demo Notebook",  # 来源标识
-    debug=True,              # 开启调试模式
+    debug=True,              # 开启调试日志
     interrupt_on_error=False # 暂时关闭中断，方便测试
 )
 
@@ -147,7 +147,7 @@ FROM (
 )
 """
 
-result = probe.execute(null_check_sql, silent=True)
+result = probe.execute(null_check_sql)
 
 # 查看结果
 print("📊 检查结果:")
@@ -180,7 +180,7 @@ FROM (
 )
 """
 
-result = probe.execute(amount_check_sql, silent=True)
+result = probe.execute(amount_check_sql)
 print("📊 金额检查结果:")
 print(result.summary())
 
@@ -244,7 +244,7 @@ checks = [
 ]
 
 # 批量执行
-batch_result = probe.execute_batch(checks, silent=True)
+batch_result = probe.execute_batch(checks)
 
 print("📊 批量检查结果:")
 print(batch_result.summary())
@@ -299,7 +299,7 @@ result1 = probe.execute("""
         1 as is_warning,
         '发现异常数据' as alert_info,
         'AbnormalYellow' as status
-""", silent=True)
+""")
 print(f"第一次检查: 级别={result1.level.name}, 触发={result1.triggered}")
 
 # 第二次检查：恢复正常，启用 notify_on_ok
@@ -309,9 +309,9 @@ result2 = probe.execute("""
         0 as is_warning,
         '数据正常' as alert_info,
         'Normal' as status
-""", notify_on_ok=True, silent=True)
+""", notify_on_ok=True)
 print(f"第二次检查: 级别={result2.level.name}, 触发={result2.triggered}")
-print("📧 如果配置了 Webhook，此时会发送恢复通知")
+print("📧 已发送恢复通知")
 
 # COMMAND ----------
 
@@ -333,15 +333,15 @@ WHERE 1=0  -- 永远返回空
 """
 
 # 空结果视为正常（默认）
-result_ok = probe.execute(empty_sql, empty_result_as="ok", silent=True)
+result_ok = probe.execute(empty_sql, empty_result_as="ok")
 print(f"empty_result_as='ok':      级别={result_ok.level.name}, 内容={result_ok.content}")
 
 # 空结果视为警告
-result_warning = probe.execute(empty_sql, empty_result_as="warning", silent=True)
+result_warning = probe.execute(empty_sql, empty_result_as="warning")
 print(f"empty_result_as='warning': 级别={result_warning.level.name}, 内容={result_warning.content}")
 
 # 空结果视为错误
-result_error = probe.execute(empty_sql, empty_result_as="error", silent=True)
+result_error = probe.execute(empty_sql, empty_result_as="error")
 print(f"empty_result_as='error':   级别={result_error.level.name}, 内容={result_error.content}")
 
 # COMMAND ----------
@@ -374,7 +374,7 @@ try:
             1 as is_warning,
             '严重问题' as alert_info,
             'AbnormalRed' as status  -- ERROR 级别
-    """, silent=True)
+    """)
     print("✅ 检查通过，继续执行")
 except ProbeInterruptError as e:
     print(f"🛑 ETL 被中断: {e}")
@@ -396,7 +396,7 @@ try:
             1 as is_warning,
             '致命错误' as alert_info,
             'Critical' as status  -- CRITICAL 级别
-    """, silent=True)
+    """)
     print("✅ 检查通过")
 except ProbeInterruptError as e:
     print(f"🚨 强制中断: {e}")
@@ -434,7 +434,7 @@ def etl_with_probe():
                 0 as is_warning,
                 '数据正常' as alert_info,
                 'Normal' as status
-        """, silent=True)
+        """)
         print("✅ 质量检查通过")
     except ProbeInterruptError:
         print("❌ 质量检查失败，ETL 中断")
@@ -473,8 +473,7 @@ condition = AggregationCondition.sum("amount") > 100
 result = probe.execute(
     sql_text="SELECT * FROM test_orders WHERE amount IS NOT NULL",
     alert_name="金额聚合检查",
-    condition=condition,
-    silent=True
+    condition=condition
 )
 
 print(f"📊 聚合检查结果:")
@@ -498,8 +497,7 @@ conditions = MultiCondition([
 result = probe.execute(
     sql_text="SELECT * FROM test_orders WHERE status = 'completed'",
     alert_name="组合条件检查",
-    condition=conditions,
-    silent=True
+    condition=conditions
 )
 
 print(f"📊 组合条件检查结果:")
@@ -527,8 +525,7 @@ result1 = probe.execute("""
 """, 
     detect_change=True,
     change_threshold=50.0,  # 变化超过 50% 告警
-    track_value="dau",
-    silent=True
+    track_value="dau"
 )
 print(f"第一次: DAU=1000")
 
@@ -543,8 +540,7 @@ result2 = probe.execute("""
 """, 
     detect_change=True,
     change_threshold=50.0,
-    track_value="dau",
-    silent=True
+    track_value="dau"
 )
 print(f"第二次: DAU=1100, 变化 10% (正常)")
 
@@ -559,8 +555,7 @@ result3 = probe.execute("""
 """, 
     detect_change=True,
     change_threshold=50.0,
-    track_value="dau",
-    silent=True
+    track_value="dau"
 )
 print(f"第三次: DAU=500, 变化 >50% (可能触发变化率告警)")
 print(f"   内容: {result3.content}")
@@ -671,7 +666,7 @@ def run_dq_checks(table_name: str, probe: SQLProbeNotifier):
     ]
     
     # 批量执行
-    result = probe.execute_batch(checks, silent=True)
+    result = probe.execute_batch(checks)
     
     # 输出结果
     print("\n📊 检查结果汇总:")
