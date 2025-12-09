@@ -32,9 +32,9 @@ import os
 # ============================================================
 FEISHU_WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/6d8b23ff-fe40-473f-a9c7-1db6398eda61"
 
-os.environ["FEISHU_WEBHOOK"] = FEISHU_WEBHOOK_URL        # default 渠道
-os.environ["FEISHU_WEBHOOK_DQ"] = FEISHU_WEBHOOK_URL     # dq 渠道
-os.environ["FEISHU_WEBHOOK_ETL"] = FEISHU_WEBHOOK_URL    # etl 渠道
+# 设置默认渠道的 Webhook
+# 命名规则: channel="xxx" → 环境变量 FEISHU_WEBHOOK_XXX（default 渠道特殊，为 FEISHU_WEBHOOK）
+os.environ["FEISHU_WEBHOOK"] = FEISHU_WEBHOOK_URL
 
 print(f"✅ 飞书 Webhook 已配置")
 
@@ -263,30 +263,22 @@ print(f"触发告警数: {len(batch_result.warning_rows)}")
 # 注意：以下代码需要先配置好 Webhook
 # 可以通过 Databricks Secrets 或环境变量配置
 
-# 发送到默认群
-# probe_default = SQLProbeNotifier(spark, channel="default")
-
-# 发送到数据质量群
-# probe_dq = SQLProbeNotifier(spark, channel="dq")
-
-# 发送到 ETL 运维群
-# probe_etl = SQLProbeNotifier(spark, channel="etl")
-
 # 演示不同渠道的初始化方式
 print("""
 📢 多渠道配置示例:
 
-# 发送到默认群（自动读取 webhook-default 或 FEISHU_WEBHOOK）
-probe_default = SQLProbeNotifier(spark, channel="default")
+命名规则:
+  channel="xxx" → Secrets: webhook-xxx / 环境变量: FEISHU_WEBHOOK_XXX
+  channel="default" (默认) → Secrets: webhook-default / 环境变量: FEISHU_WEBHOOK
 
-# 发送到数据质量群（自动读取 webhook-dq 或 FEISHU_WEBHOOK_DQ）
-probe_dq = SQLProbeNotifier(spark, channel="dq")
+# 使用默认渠道
+probe = SQLProbeNotifier(spark)
 
-# 发送到 ETL 运维群（自动读取 webhook-etl 或 FEISHU_WEBHOOK_ETL）
-probe_etl = SQLProbeNotifier(spark, channel="etl")
+# 使用自定义渠道（需先配置对应的 Secrets 或环境变量）
+probe = SQLProbeNotifier(spark, channel="your_channel")
 
 # 显式指定 Webhook（不走配置）
-probe_custom = SQLProbeNotifier(spark, webhook="https://open.feishu.cn/open-apis/bot/v2/hook/xxx")
+probe = SQLProbeNotifier(spark, webhook="https://open.feishu.cn/open-apis/bot/v2/hook/xxx")
 """)
 
 # COMMAND ----------
@@ -724,7 +716,7 @@ print("✅ 测试数据已清理")
 # MAGIC # 完整参数
 # MAGIC probe = SQLProbeNotifier(
 # MAGIC     spark,
-# MAGIC     channel="dq",           # 发送到哪个群
+# MAGIC     channel="your_channel", # 自定义渠道（按需配置）
 # MAGIC     source="My ETL",        # 来源标识
 # MAGIC     interrupt_on_error=True,# 遇到 ERROR 中断
 # MAGIC     debug=False             # 生产模式

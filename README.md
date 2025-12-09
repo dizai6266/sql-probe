@@ -9,7 +9,7 @@
 *   **SQL 驱动 (SQL-Driven)**: 无需编写复杂的 Python 逻辑，一段 SQL 搞定检查与告警规则。
 *   **智能分级 (Smart Leveling)**: 根据 SQL 返回的 `is_warning` 和 `status` 自动推断 Info, Warning, Error, Critical 级别。
 *   **流程控制 (Flow Control)**: 支持基于告警级别自动阻断 ETL 任务（如检测到 Error 自动抛出异常中断 Notebook）。
-*   **多渠道路由 (Multi-Channel)**: 内置多 Webhook 支持，轻松将不同类型的告警分发到不同的飞书群（如 DQ 群、ETL 运维群）。
+*   **多渠道路由 (Multi-Channel)**: 内置多 Webhook 支持，轻松将不同类型的告警分发到不同的飞书群（channel 名称可自定义）。
 
 ---
 
@@ -76,13 +76,14 @@ SQL-Probe 依赖 SQL 返回的特定字段来决定行为。请确保你的 SQL 
 # 1. 创建 scope (如果已有可跳过)
 databricks secrets create-scope --scope sql-probe
 
-# 2. 配置不同渠道的 Webhook
-databricks secrets put --scope sql-probe --key webhook-default   # 默认群
-databricks secrets put --scope sql-probe --key webhook-dq        # 数据质量群
-databricks secrets put --scope sql-probe --key webhook-etl       # ETL 运维群
+# 2. 按需配置渠道的 Webhook（channel 名称可自定义）
+databricks secrets put --scope sql-probe --key webhook-default      # 默认渠道
+databricks secrets put --scope sql-probe --key webhook-your_channel # 自定义渠道
 ```
 
-> 也可以通过 Cluster 环境变量配置：`FEISHU_WEBHOOK`, `FEISHU_WEBHOOK_DQ` 等。
+命名规则:
+- `channel="xxx"` → Secrets: `webhook-xxx` / 环境变量: `FEISHU_WEBHOOK_XXX`
+- `channel="default"` → Secrets: `webhook-default` / 环境变量: `FEISHU_WEBHOOK`（无后缀）
 
 ---
 
@@ -104,16 +105,12 @@ spark.sql("INSERT INTO downstream_table SELECT * FROM temp_table")
 ```
 
 ### 场景 2: 发送到特定群组 (Routing)
-将不同类型的告警分发给不同的团队。
+将不同类型的告警分发给不同的团队，channel 名称可自定义。
 
 ```python
-# 发送到数据质量治理群
-dq_probe = SQLProbeNotifier(spark, channel="dq")
-dq_probe.execute(dq_sql)
-
-# 发送到运维监控群
-etl_probe = SQLProbeNotifier(spark, channel="etl")
-etl_probe.execute(etl_sql)
+# 发送到自定义渠道（需先配置对应的 Secrets 或环境变量）
+probe = SQLProbeNotifier(spark, channel="your_channel")
+probe.execute(check_sql)
 ```
 
 ### 场景 3: 批量执行 (Batch Execution)

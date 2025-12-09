@@ -4,15 +4,11 @@ SQL-Probe 通知器
 调用 feishu-notify 发送通知，提供 SQL 执行、级别推断、通知发送和流程中断功能
 
 Webhook 配置（支持多个飞书群）:
-    通过 channel 参数选择发送到不同的飞书群:
+    通过 channel 参数按需配置不同的飞书群:
     
-    | channel     | Secrets Key      | 环境变量             | 用途示例   |
-    |-------------|------------------|---------------------|-----------|
-    | "default"   | webhook-default  | FEISHU_WEBHOOK      | 默认群     |
-    | "dq"        | webhook-dq       | FEISHU_WEBHOOK_DQ   | 数据质量群  |
-    | "etl"       | webhook-etl      | FEISHU_WEBHOOK_ETL  | ETL 运维群 |
-    | "alert"     | webhook-alert    | FEISHU_WEBHOOK_ALERT| 告警群     |
-    | 自定义...    | webhook-{name}   | FEISHU_WEBHOOK_{NAME}| 自定义群  |
+    命名规则:
+    - channel="xxx" → Secrets Key: webhook-xxx / 环境变量: FEISHU_WEBHOOK_XXX
+    - channel="default" 是特殊情况，环境变量为 FEISHU_WEBHOOK（无后缀）
 
 配置优先级: 显式参数 > Databricks Secrets > 环境变量 > 回退到 default
 """
@@ -54,14 +50,11 @@ class SQLProbeNotifier:
         ```python
         from sql_probe import SQLProbeNotifier, ProbeInterruptError
         
-        # 发送到默认群（自动读取 webhook-default 或 FEISHU_WEBHOOK）
+        # 使用默认渠道（读取 webhook-default 或 FEISHU_WEBHOOK）
         probe = SQLProbeNotifier(spark)
         
-        # 发送到数据质量群（自动读取 webhook-dq 或 FEISHU_WEBHOOK_DQ）
-        probe = SQLProbeNotifier(spark, channel="dq")
-        
-        # 发送到 ETL 运维群
-        probe = SQLProbeNotifier(spark, channel="etl")
+        # 使用自定义渠道（读取 webhook-{channel} 或 FEISHU_WEBHOOK_{CHANNEL}）
+        probe = SQLProbeNotifier(spark, channel="your_channel")
         
         # 显式指定 webhook（不走配置）
         probe = SQLProbeNotifier(spark, webhook="https://...")
@@ -99,10 +92,9 @@ class SQLProbeNotifier:
         Args:
             spark: SparkSession 实例
             webhook: 飞书 Webhook URL（直接传入，优先级最高）
-            channel: 通知渠道，选择发送到哪个飞书群:
-                     - "default" → Secrets: webhook-default / 环境变量: FEISHU_WEBHOOK
-                     - "dq"      → Secrets: webhook-dq / 环境变量: FEISHU_WEBHOOK_DQ
-                     - "etl"     → Secrets: webhook-etl / 环境变量: FEISHU_WEBHOOK_ETL
+            channel: 通知渠道，按需自定义，对应的配置规则:
+                     - channel="xxx" → Secrets: webhook-xxx / 环境变量: FEISHU_WEBHOOK_XXX
+                     - channel="default" (默认) → Secrets: webhook-default / 环境变量: FEISHU_WEBHOOK
             source: 消息来源标识
             notifier: 已初始化的 feishu-notify Notifier 实例（可选）
             debug: 是否开启调试模式
@@ -146,7 +138,7 @@ class SQLProbeNotifier:
         
         Args:
             webhook: 显式传入的 webhook URL
-            channel: 通知渠道名称（如 "default", "dq", "etl"）
+            channel: 通知渠道名称（可自定义，如 "default", "your_channel"）
         """
         # 1. 显式参数优先
         if webhook:
@@ -828,31 +820,29 @@ class SQLProbeNotifier:
 ║                        SQL-Probe Webhook 配置说明                             ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                              ║
-║  通过 channel 参数选择发送到不同的飞书群:                                        ║
+║  通过 channel 参数按需配置不同的飞书群:                                         ║
 ║                                                                              ║
-║  ┌─────────────┬──────────────────┬────────────────────────┬─────────────┐   ║
-║  │ channel参数  │ Secrets Key      │ 环境变量                │ 用途        │   ║
-║  ├─────────────┼──────────────────┼────────────────────────┼─────────────┤   ║
-║  │ "default"   │ webhook-default  │ FEISHU_WEBHOOK         │ 默认群      │   ║
-║  │ "dq"        │ webhook-dq       │ FEISHU_WEBHOOK_DQ      │ 数据质量群   │   ║
-║  │ "etl"       │ webhook-etl      │ FEISHU_WEBHOOK_ETL     │ ETL运维群   │   ║
-║  │ "alert"     │ webhook-alert    │ FEISHU_WEBHOOK_ALERT   │ 告警群      │   ║
-║  └─────────────┴──────────────────┴────────────────────────┴─────────────┘   ║
+║  命名规则:                                                                    ║
+║  ┌─────────────────┬──────────────────────┬──────────────────────────────┐   ║
+║  │ channel 参数     │ Secrets Key          │ 环境变量                      │   ║
+║  ├─────────────────┼──────────────────────┼──────────────────────────────┤   ║
+║  │ "default" (默认) │ webhook-default      │ FEISHU_WEBHOOK               │   ║
+║  │ "xxx" (自定义)   │ webhook-xxx          │ FEISHU_WEBHOOK_XXX           │   ║
+║  └─────────────────┴──────────────────────┴──────────────────────────────┘   ║
 ║                                                                              ║
-║  自定义: channel="xxx" → Secrets: webhook-xxx / 环境变量: FEISHU_WEBHOOK_XXX  ║
-║         (Secrets保持原样，环境变量自动转大写)                                   ║
+║  说明: channel 名称可自由定义，Secrets key 保持原样，环境变量名自动转大写         ║
 ║                                                                              ║
 ║  配置优先级: webhook参数 > Databricks Secrets > 环境变量 > 回退到default        ║
 ║                                                                              ║
-║  Databricks Secrets 配置:                                                    ║
+║  Databricks Secrets 配置示例:                                                 ║
 ║    databricks secrets create-scope --scope sql-probe                         ║
 ║    databricks secrets put --scope sql-probe --key webhook-default            ║
-║    databricks secrets put --scope sql-probe --key webhook-dq                 ║
+║    databricks secrets put --scope sql-probe --key webhook-your_channel       ║
 ║                                                                              ║
 ║  使用示例:                                                                    ║
-║    probe = SQLProbeNotifier(spark)                 # 默认群                  ║
-║    probe = SQLProbeNotifier(spark, channel="dq")   # 数据质量群              ║
-║    probe = SQLProbeNotifier(spark, channel="etl")  # ETL运维群               ║
+║    probe = SQLProbeNotifier(spark)                        # 默认渠道         ║
+║    probe = SQLProbeNotifier(spark, channel="your_channel") # 自定义渠道      ║
+║    probe = SQLProbeNotifier(spark, webhook="https://...")  # 显式指定        ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """

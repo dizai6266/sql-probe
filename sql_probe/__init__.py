@@ -5,26 +5,18 @@ SQL-Probe: 基于 SQL 的告警探针
 为 Databricks/Spark 环境提供数据质量监控
 
 多渠道配置（支持发送到不同飞书群）:
-    | channel 参数 | Secrets Key      | 环境变量               |
-    |-------------|------------------|------------------------|
-    | "default"   | webhook-default  | FEISHU_WEBHOOK         |
-    | "dq"        | webhook-dq       | FEISHU_WEBHOOK_DQ      |
-    | "etl"       | webhook-etl      | FEISHU_WEBHOOK_ETL     |
-    | "alert"     | webhook-alert    | FEISHU_WEBHOOK_ALERT   |
-    
-    自定义: channel="xxx" → Secrets: webhook-xxx / 环境变量: FEISHU_WEBHOOK_XXX (自动大写)
+    命名规则:
+    - channel="xxx" → Secrets Key: webhook-xxx / 环境变量: FEISHU_WEBHOOK_XXX
+    - channel="default" 是特殊情况，环境变量为 FEISHU_WEBHOOK（无后缀）
 
 Usage:
     from sql_probe import SQLProbeNotifier
     
-    # 发到默认群
+    # 使用默认渠道
     probe = SQLProbeNotifier(spark)
     
-    # 发到数据质量群
-    probe = SQLProbeNotifier(spark, channel="dq")
-    
-    # 发到 ETL 运维群
-    probe = SQLProbeNotifier(spark, channel="etl")
+    # 使用自定义渠道
+    probe = SQLProbeNotifier(spark, channel="your_channel")
     
     result = probe.execute('''
         SELECT
