@@ -351,6 +351,10 @@ class SQLProbeNotifier:
                 if change_result and change_result.get("is_anomaly"):
                     # 将变化率信息附加到内容
                     result.content += f"\n\n📈 变化率异常: {change_result['message']}"
+                    # 升级告警级别，触发通知
+                    if result.level < AlertLevel.WARNING:
+                        result.level = AlertLevel.WARNING
+                    result.triggered = True
             
             # 8. 发送通知（包括恢复通知）
             if not silent:
