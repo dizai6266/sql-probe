@@ -1,2 +1,0 @@
-# Examples for feishu-notify
-
