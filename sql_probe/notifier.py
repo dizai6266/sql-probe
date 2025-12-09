@@ -225,14 +225,21 @@ class SQLProbeNotifier:
         if webhook:
             try:
                 # 尝试导入 feishu-notify
-                # 注意：需要将 feishu-notify 添加到 Python path 或安装为包
-                sys.path.insert(0, str(__file__).rsplit('/', 2)[0])
-                from feishu_notify.notifier import Notifier
+                # 方法1: 直接导入（如果已在 sys.path 中）
+                try:
+                    from feishu_notify.notifier import Notifier
+                except ImportError:
+                    # 方法2: 计算相对路径并添加到 sys.path
+                    import os.path
+                    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    if parent_dir not in sys.path:
+                        sys.path.insert(0, parent_dir)
+                    from feishu_notify.notifier import Notifier
                 return Notifier(webhook=webhook, source=source)
-            except ImportError:
+            except ImportError as e:
                 logger.warning(
-                    "feishu-notify 未安装，通知功能将不可用。"
-                    "请安装 feishu-notify 或传入已初始化的 notifier 实例。"
+                    f"feishu-notify 未安装，通知功能将不可用。"
+                    f"请安装 feishu-notify 或传入已初始化的 notifier 实例。错误: {e}"
                 )
                 return None
         
